@@ -34,25 +34,6 @@ class Router implements RouterInterface
     }
 
     /**
-     * @param string $url
-     *
-     * @return array|null
-     */
-    public function match(string $url): ?array
-    {
-        $result = null;
-        if ($this->routes !== null) {
-            $result = Tree::match($url, $this->routes);
-        }
-
-        if ($result === null && $this->cache) {
-            $result = $this->cache->match($url);
-        }
-
-        return $result;
-    }
-
-    /**
      * @param string $method
      * @param string $url
      *
