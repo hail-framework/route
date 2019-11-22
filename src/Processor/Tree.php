@@ -100,6 +100,12 @@ class Tree
                 } else {
                     $methods = $rule[self::METHODS] ?? $methods;
 
+                    if (\is_string($methods)) {
+                        $methods = \array_map('\trim',
+                            \explode('|', $methods)
+                        );
+                    }
+
                     foreach (['controller', 'action', self::PARAMS] as $v) {
                         if (!empty($rule[$v])) {
                             $handler[$v] = $rule[$v];
