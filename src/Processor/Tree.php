@@ -15,6 +15,14 @@ class Tree
     private const CHILDREN = 'children';
     private const REGEXPS = 'regexps';
     private const VARIABLES = 'variables';
+    private const WILDCARD = 'wildcard';
+
+    private const NODE = [
+        self::CHILDREN => [],
+        self::REGEXPS => [],
+        self::VARIABLES => [],
+        self::WILDCARD => false,
+    ];
 
     private const SEPARATOR = "/ \t\n\r";
 
@@ -64,6 +72,10 @@ class Tree
                 $current = $current[self::VARIABLES];
                 $variables[] = $v;
                 continue;
+            }
+
+            if ($current[self::WILDCARD]) {
+                $params['*'] = \implode('/', \array_slice($parts, $i));
             }
 
             break;
@@ -135,16 +147,13 @@ class Tree
         }
 
         if ($routes === null) {
-            $routes = [
-                self::CHILDREN => [],
-                self::REGEXPS => [],
-                self::VARIABLES => [],
-            ];
+            $routes = self::NODE;
         }
 
         $route = \trim($route, self::SEPARATOR);
 
         $len = \strlen($route);
+
         $route = \rtrim($route, ']');
         $num = $len - \strlen($route);
 
@@ -172,9 +181,11 @@ class Tree
             $parts = \explode('/', $route);
         }
 
+        $endIndex = \count($parts) - 1;
+
         $names = [];
         $current = &$routes;
-        foreach ($parts as $v) {
+        foreach ($parts as $index => $v) {
             if ($v[0] === '{' && $v[-1] === '}') {
                 $v = \substr($v, 1, -1);
                 if (\strpos($v, ':') !== false) {
@@ -182,30 +193,24 @@ class Tree
 
                     $regexp = '/^' . $regexp . '$/';
                     if (!isset($current[self::REGEXPS][$regexp])) {
-                        $current[self::REGEXPS][$regexp] = [
-                            self::CHILDREN => [],
-                            self::REGEXPS => [],
-                            self::VARIABLES => [],
+                        $current[self::REGEXPS][$regexp] = self::NODE + [
                             self::NAME => $name,
                         ];
                     }
                     $current = &$current[self::REGEXPS][$regexp];
                 } else {
-                    $current[self::VARIABLES] = [
-                        self::CHILDREN => [],
-                        self::REGEXPS => [],
-                        self::VARIABLES => [],
-                    ];
+                    $current[self::VARIABLES] = self::NODE;
                     $names[] = $v;
                     $current = &$current[self::VARIABLES];
                 }
+            } elseif ($v === '*') {
+                if ($index !== $endIndex) {
+                    throw new \InvalidArgumentException('Wildcard can only be defined at the end of a route');
+                }
+                $current[self::WILDCARD] = true;
             } else {
                 if (!isset($current[self::CHILDREN][$v])) {
-                    $current[self::CHILDREN][$v] = [
-                        self::CHILDREN => [],
-                        self::REGEXPS => [],
-                        self::VARIABLES => [],
-                    ];
+                    $current[self::CHILDREN][$v] = self::NODE;
                 }
                 $current = &$current[self::CHILDREN][$v];
             }
