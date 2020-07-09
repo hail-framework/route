@@ -28,9 +28,7 @@ class Router implements RouterInterface
             $this->cache = new Dispatcher\SimpleCache($config, $cache);
         } elseif ($cache instanceof CacheItemPoolInterface) {
             $this->cache = new Dispatcher\Cache($config, $cache);
-        }
-
-        if ($config !== []) {
+        } elseif ($config !== []) {
             $this->addRoutes($config);
         }
     }
