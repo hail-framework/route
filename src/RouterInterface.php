@@ -1,9 +1,6 @@
 <?php
 
-
 namespace Hail\Route;
-
-use Hail\Route\Dispatcher\DispatcherInterface;
 
 interface RouterInterface extends DispatcherInterface
 {

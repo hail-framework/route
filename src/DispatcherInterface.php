@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Hail\Route\Dispatcher;
+namespace Hail\Route;
 
 
 interface DispatcherInterface

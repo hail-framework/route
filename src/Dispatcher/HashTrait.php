@@ -2,8 +2,6 @@
 
 namespace Hail\Route\Dispatcher;
 
-use Hail\Route\Processor\Tree;
-
 trait HashTrait
 {
     /**
@@ -18,9 +16,11 @@ trait HashTrait
         }
 
         if ($url !== '') {
-            $url = Tree::url($url);
+            $url = $this->url($url);
         }
 
         return 'ROUTE#' . \sha1($this->config . $url);
     }
+
+    abstract protected function url(string $url): string;
 }

@@ -1,49 +1,143 @@
 <?php
 
+namespace Hail\Route;
 
-namespace Hail\Route\Processor;
-
-
-class Tree
+abstract class AbstractDispatcher
 {
-    private const NAME = 'name';
-    private const NAMES = 'names';
-    private const METHODS = 'methods';
-    private const ROUTE = 'route';
-    private const PARAMS = 'params';
+    protected const NAME = 'name';
+    protected const NAMES = 'names';
+    protected const METHODS = 'methods';
+    protected const ROUTE = 'route';
+    protected const PARAMS = 'params';
 
-    private const CHILDREN = 'children';
-    private const REGEXPS = 'regexps';
-    private const VARIABLES = 'variables';
-    private const WILDCARD = 'wildcard';
+    protected const CHILDREN = 'children';
+    protected const REGEXPS = 'regexps';
+    protected const VARIABLES = 'variables';
+    protected const WILDCARD = 'wildcard';
 
-    private const NODE = [
+    protected const SEPARATOR = "/ \t\n\r";
+
+    protected const NODE = [
         self::CHILDREN => [],
         self::REGEXPS => [],
         self::VARIABLES => [],
         self::WILDCARD => false,
     ];
 
-    private const SEPARATOR = "/ \t\n\r";
+    /**
+     * @var array[]
+     */
+    protected $routes;
 
-    public static function url(string $url): string
+    /**
+     * @var array
+     */
+    protected $result = [];
+
+    abstract public function dispatch(string $url, string $method = null): array;
+
+    protected function formatResult(?array $route, ?string $method): array
+    {
+        if ($route === null) {
+            $result = [
+                'url' => $route['url'],
+                'error' => 404
+            ];
+        } elseif ($method !== null && isset($route['methods'][$method])) {
+            $params = $route['params'];
+            $handler = $route['methods'][$method];
+
+            if (!$handler instanceof \Closure) {
+                if (isset($handler['params'])) {
+                    $params += $handler['params'];
+                }
+
+                $handler = [
+                    'app' => $handler['app'] ?? $params['app'] ?? null,
+                    'controller' => $handler['controller'] ?? $params['controller'] ?? null,
+                    'action' => $handler['action'] ?? $params['action'] ?? null,
+                ];
+            }
+
+            $result = [
+                'url' => $route['url'],
+                'method' => $method,
+                'route' => $route['route'],
+                'params' => $params,
+                'handler' => $handler,
+            ];
+        } else {
+            $result = [
+                'url' => $route['url'],
+                'error' => 405,
+                'route' => $route['route'],
+                'params' => $route['params'],
+                'allowed' => \array_keys($route['methods']),
+            ];
+        }
+
+        return $this->result = $result;
+    }
+
+    /**
+     * @return array
+     */
+    public function result(): array
+    {
+        return $this->result;
+    }
+
+    /**
+     * @param string $url
+     *
+     * @return array|null
+     */
+    public function methods(string $url): ?array
+    {
+        $result = $this->dispatch($url);
+        if ($result['error'] === 404) {
+            return null;
+        }
+
+        return $result['allowed'];
+    }
+
+
+    /**
+     * @param string $key
+     *
+     * @return array|string|null
+     */
+    public function param(string $key = null)
+    {
+        if ($key === null) {
+            return $this->result['params'] ?? null;
+        }
+
+        return $this->result['params'][$key] ?? null;
+    }
+
+    /**
+     * @return array|\Closure
+     */
+    public function handler()
+    {
+        return $this->result['handler'];
+    }
+
+    protected function url(string $url): string
     {
         return \trim(\explode('?', $url, 2)[0], self::SEPARATOR);
     }
 
     /**
      * @param string     $url
-     * @param array|null $routes
      *
      * @return array|null
      */
-    public static function match(string $url, array $routes = null): ?array
+    protected function match(string $url): ?array
     {
-        if ($routes === null) {
-            return null;
-        }
-
-        $path = self::url($url);
+        $path = $this->url($url);
         if ($path === '') {
             $parts = [];
         } else {
@@ -51,7 +145,7 @@ class Tree
         }
 
         $params = $variables = [];
-        $current = $routes;
+        $current = $this->routes;
         foreach ($parts as $i => $v) {
             if (isset($current[self::CHILDREN][$v])) {
                 $current = $current[self::CHILDREN][$v];
@@ -99,7 +193,7 @@ class Tree
         ];
     }
 
-    public static function init(array &$routes, array $config)
+    public function addRoutes(array $config): void
     {
         foreach ($config as $app => $rules) {
             $app = \ucfirst($app);
@@ -112,12 +206,6 @@ class Tree
                 } else {
                     $methods = $rule[self::METHODS] ?? $methods;
 
-                    if (\is_string($methods)) {
-                        $methods = \array_map('\trim',
-                            \explode('|', $methods)
-                        );
-                    }
-
                     foreach (['controller', 'action', self::PARAMS] as $v) {
                         if (!empty($rule[$v])) {
                             $handler[$v] = $rule[$v];
@@ -125,29 +213,24 @@ class Tree
                     }
                 }
 
-                self::parse($routes, $methods, $route, $handler);
+                $this->addRoute($methods, $route, $handler);
             }
         }
     }
 
     /**
-     * @param array          $routes
-     * @param array          $methods
+     * @param array|string   $methods
      * @param string         $route
      * @param array|callable $handler
      */
-    public static function parse(array &$routes, array $methods, string $route, $handler): void
+    public function addRoute($methods, string $route, $handler): void
     {
-        if ($methods === []) {
+        if (empty($methods)) {
             throw new \InvalidArgumentException('Methods is empty');
         }
 
         if (!\is_callable($handler) && !\is_array($handler)) {
             throw new \InvalidArgumentException('Handler is not a valid type: ' . \var_export($handler, true));
-        }
-
-        if ($routes === null) {
-            $routes = self::NODE;
         }
 
         $route = \trim($route, self::SEPARATOR);
@@ -166,14 +249,27 @@ class Tree
             throw new \InvalidArgumentException('Optional pattern error, "[" and "]" does not match');
         }
 
+        if (\is_string($methods)) {
+            $methods = \array_map('\trim', \explode('|', $methods));
+        }
+
+        if ($this->routes === null) {
+            $this->routes = self::NODE;
+        }
+
         $pattern = '';
         foreach ($optionals as $p) {
             $pattern .= $p;
-            self::add($routes, $methods, $pattern, $handler);
+            $this->parseRoute($methods, $pattern, $handler);
         }
     }
 
-    private static function add(array &$routes, array $methods, string $route, $handler): void
+    /**
+     * @param array          $methods
+     * @param string         $route
+     * @param array|callable $handler
+     */
+    private function parseRoute(array $methods, string $route, $handler): void
     {
         if ($route === '') {
             $parts = [];
@@ -184,7 +280,7 @@ class Tree
         $endIndex = \count($parts) - 1;
 
         $names = [];
-        $current = &$routes;
+        $current = &$this->routes;
         foreach ($parts as $index => $v) {
             if ($v[0] === '{' && $v[-1] === '}') {
                 $v = \substr($v, 1, -1);
@@ -194,8 +290,8 @@ class Tree
                     $regexp = '/^' . $regexp . '$/';
                     if (!isset($current[self::REGEXPS][$regexp])) {
                         $current[self::REGEXPS][$regexp] = self::NODE + [
-                            self::NAME => $name,
-                        ];
+                                self::NAME => $name,
+                            ];
                     }
                     $current = &$current[self::REGEXPS][$regexp];
                 } else {

@@ -2,6 +2,8 @@
 
 namespace Hail\Route\Dispatcher;
 
+use Hail\Route\AbstractDispatcher;
+use Hail\Route\DispatcherInterface;
 use Hail\Route\Processor\Tree;
 use Psr\Cache\CacheItemPoolInterface;
 
@@ -11,9 +13,8 @@ use Psr\Cache\CacheItemPoolInterface;
  * @package Hail\Database
  * @author  FENG Hao <flyinghail@msn.com>
  */
-class Cache implements DispatcherInterface
+class Cache extends AbstractDispatcher implements DispatcherInterface
 {
-    use DispatcherTrait;
     use HashTrait;
 
     /**
@@ -32,7 +33,7 @@ class Cache implements DispatcherInterface
         if ($item->isHit()) {
             $this->routes = $item->get();
         } else {
-            Tree::init($this->routes, $config);
+            $this->addRoutes($config);
 
             $cache->save(
                 $item->set($this->routes)
@@ -48,7 +49,7 @@ class Cache implements DispatcherInterface
         if ($item->isHit()) {
             $result = $item->get();
         } else {
-            $result = Tree::match($url, $this->routes);
+            $result = $this->match($url);
             if ($result !== null) {
                 $this->cache->save(
                     $item->set($result)

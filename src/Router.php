@@ -3,7 +3,6 @@
 namespace Hail\Route;
 
 use Hail\Route\Processor\Tree;
-use Hail\Route\Dispatcher\DispatcherTrait;
 use Psr\SimpleCache\CacheInterface;
 use Psr\Cache\CacheItemPoolInterface;
 
@@ -13,10 +12,8 @@ use Psr\Cache\CacheItemPoolInterface;
  * @package Hail\Route
  * @author  Feng Hao <flyinghail@msn.com>
  */
-class Router implements RouterInterface
+class Router extends AbstractRouter implements RouterInterface
 {
-    use DispatcherTrait;
-
     /**
      * @var DispatcherInterface
      */
@@ -43,7 +40,7 @@ class Router implements RouterInterface
     {
         $result = null;
         if ($this->routes !== null) {
-            $result = Tree::match($url, $this->routes);
+            $result = $this->match($url);
         }
 
         if ($result === null && $this->cache) {
@@ -51,30 +48,6 @@ class Router implements RouterInterface
         }
 
         return $this->formatResult($result, $method);
-    }
-
-    /**
-     * @param array $config
-     */
-    public function addRoutes(array $config): void
-    {
-        Tree::init($this->routes, $config);
-    }
-
-    /**
-     * @param string|array   $methods
-     * @param string         $route
-     * @param array|callable $handler
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function addRoute($methods, string $route, $handler): void
-    {
-        if (\is_string($methods)) {
-            $methods = \array_map('\trim', \explode('|', $methods));
-        }
-
-        Tree::parse($this->routes, $methods, $route, $handler);
     }
 
     public function head(string $route, $handler): RouterInterface

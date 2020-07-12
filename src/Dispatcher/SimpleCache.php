@@ -2,7 +2,8 @@
 
 namespace Hail\Route\Dispatcher;
 
-use Hail\Route\Processor\Tree;
+use Hail\Route\AbstractDispatcher;
+use Hail\Route\DispatcherInterface;
 use Psr\SimpleCache\CacheInterface;
 
 /**
@@ -11,9 +12,8 @@ use Psr\SimpleCache\CacheInterface;
  * @package Hail\Database
  * @author  FENG Hao <flyinghail@msn.com>
  */
-class SimpleCache implements DispatcherInterface
+class SimpleCache extends AbstractDispatcher implements DispatcherInterface
 {
-    use DispatcherTrait;
     use HashTrait;
 
     /**
@@ -32,7 +32,7 @@ class SimpleCache implements DispatcherInterface
         if ($item !== null) {
             $this->routes = $item;
         } else {
-            Tree::init($this->routes, $config);
+            $this->addRoutes($config);
             $cache->set($key, $this->routes);
         }
     }
@@ -43,7 +43,7 @@ class SimpleCache implements DispatcherInterface
 
         $result = $this->cache->get($key);
         if ($result === null) {
-            $result = Tree::match($url, $this->routes);
+            $result = $this->match($url);
             if ($result !== null) {
                 $this->cache->set($key, $result);
             }
