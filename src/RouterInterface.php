@@ -2,6 +2,8 @@
 
 namespace Hail\Route;
 
+use Hail\Route\Dispatcher\DispatcherInterface;
+
 interface RouterInterface extends DispatcherInterface
 {
     public function addRoutes(array $config): void;

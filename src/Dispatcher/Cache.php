@@ -2,9 +2,6 @@
 
 namespace Hail\Route\Dispatcher;
 
-use Hail\Route\AbstractDispatcher;
-use Hail\Route\DispatcherInterface;
-use Hail\Route\Processor\Tree;
 use Psr\Cache\CacheItemPoolInterface;
 
 /**
@@ -32,12 +29,6 @@ class Cache extends AbstractDispatcher implements DispatcherInterface
 
         if ($item->isHit()) {
             $this->routes = $item->get();
-        } else {
-            $this->addRoutes($config);
-
-            $cache->save(
-                $item->set($this->routes)
-            );
         }
     }
 
@@ -58,5 +49,20 @@ class Cache extends AbstractDispatcher implements DispatcherInterface
         }
 
         return $this->formatResult($result, $method);
+    }
+
+    /**
+     * @param array $routes
+     */
+    public function setRoutes(array $routes): void
+    {
+        $this->routes = $routes;
+
+        $key = $this->hash('#routes');
+        $item = $this->cache->getItem($key);
+
+        $this->cache->save(
+            $item->set($routes)
+        );
     }
 }

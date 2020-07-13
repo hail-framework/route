@@ -2,7 +2,7 @@
 
 namespace Hail\Route;
 
-use Hail\Route\Processor\Tree;
+use Hail\Route\Dispatcher\DispatcherInterface;
 use Psr\SimpleCache\CacheInterface;
 use Psr\Cache\CacheItemPoolInterface;
 
@@ -19,14 +19,28 @@ class Router extends AbstractRouter implements RouterInterface
      */
     protected $cache;
 
+    /**
+     * Router constructor.
+     *
+     * @param array                                 $config
+     * @param CacheInterface|CacheItemPoolInterface $cache
+     */
     public function __construct(array $config = [], $cache = null)
     {
-        if ($cache instanceof CacheInterface) {
-            $this->cache = new Dispatcher\SimpleCache($config, $cache);
-        } elseif ($cache instanceof CacheItemPoolInterface) {
-            $this->cache = new Dispatcher\Cache($config, $cache);
-        } elseif ($config !== []) {
-            $this->addRoutes($config);
+        if ($config !== []) {
+            if ($cache instanceof CacheInterface) {
+                $this->cache = new Dispatcher\SimpleCache($config, $cache);
+            } elseif ($cache instanceof CacheItemPoolInterface) {
+                $this->cache = new Dispatcher\Cache($config, $cache);
+            } else {
+                $this->addRoutes($config);
+            }
+
+            if ($this->cache && $this->cache->getRoutes() === null) {
+                $this->addMethods($config);
+                $this->cache->setRoutes($this->routes);
+                $this->routes = null;
+            }
         }
     }
 
@@ -44,7 +58,7 @@ class Router extends AbstractRouter implements RouterInterface
         }
 
         if ($result === null && $this->cache) {
-             return $this->cache->dispatch($url, $method);
+            return $this->cache->dispatch($url, $method);
         }
 
         return $this->formatResult($result, $method);

@@ -1,8 +1,6 @@
 <?php
 
-
-namespace Hail\Route;
-
+namespace Hail\Route\Dispatcher;
 
 interface DispatcherInterface
 {
@@ -23,4 +21,8 @@ interface DispatcherInterface
      * @return array|\Closure
      */
     public function handler();
+
+    public function getRoutes(): ?array;
+
+    public function setRoutes(array $routes): void;
 }
