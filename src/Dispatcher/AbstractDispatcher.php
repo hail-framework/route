@@ -22,113 +22,10 @@ abstract class AbstractDispatcher
 
     protected const SEPARATOR = "/ \t\n\r";
 
-    protected const NODE = [
-        self::CHILDREN => [],
-        self::REGEXPS => [],
-        self::VARIABLES => [],
-        self::WILDCARD => false,
-    ];
-
     /**
      * @var array[]
      */
     protected $routes;
-
-    /**
-     * @var array
-     */
-    protected $result = [];
-
-    abstract public function dispatch(string $url, string $method = null): array;
-
-    protected function formatResult(?array $route, ?string $method): array
-    {
-        if ($route === null) {
-            return $this->result = [
-                self::URL => $route[self::URL],
-                self::ERROR => 404,
-            ];
-        }
-
-        if ($method !== null && isset($route[self::METHODS][$method])) {
-            $params = $route[self::PARAMS];
-            $handler = $route[self::METHODS][$method];
-
-            if (!$handler instanceof \Closure) {
-                if (isset($handler[self::PARAMS])) {
-                    $params += $handler[self::PARAMS];
-                }
-
-                $handler = [
-                    'app' => $handler['app'] ?? $params['app'] ?? null,
-                    'controller' => $handler['controller'] ?? $params['controller'] ?? null,
-                    'action' => $handler['action'] ?? $params['action'] ?? null,
-                ];
-            }
-
-            return $this->result = [
-                self::URL => $route[self::URL],
-                self::METHOD => $method,
-                self::ROUTE => $route[self::ROUTE],
-                self::PARAMS => $params,
-                self::HANDLER => $handler,
-            ];
-        }
-
-        return $this->result = [
-            self::URL => $route[self::URL],
-            self::ERROR => 405,
-            self::ROUTE => $route[self::ROUTE],
-            self::PARAMS => $route[self::PARAMS],
-            self::METHODS => \array_keys($route[self::METHODS]),
-        ];
-    }
-
-    /**
-     * @return array
-     */
-    public function result(): array
-    {
-        return $this->result;
-    }
-
-    /**
-     * @param string $url
-     *
-     * @return array|null
-     */
-    public function methods(string $url): ?array
-    {
-        $result = $this->dispatch($url);
-        if ($result[self::ERROR] === 404) {
-            return null;
-        }
-
-        return $result[self::METHODS];
-    }
-
-
-    /**
-     * @param string $key
-     *
-     * @return array|string|null
-     */
-    public function param(string $key = null)
-    {
-        if ($key === null) {
-            return $this->result[self::PARAMS] ?? null;
-        }
-
-        return $this->result[self::PARAMS][$key] ?? null;
-    }
-
-    /**
-     * @return array|\Closure
-     */
-    public function handler()
-    {
-        return $this->result[self::HANDLER];
-    }
 
     protected function url(string $url): string
     {
@@ -201,16 +98,16 @@ abstract class AbstractDispatcher
     /**
      * @return array[]
      */
-    public function getRoutes(): ?array
+    public function getRules(): ?array
     {
         return $this->routes;
     }
 
     /**
-     * @param array[] $routes
+     * @param array[] $rules
      */
-    public function setRoutes(array $routes): void
+    public function setRules(array $rules): void
     {
-        $this->routes = $routes;
+        $this->routes = $rules;
     }
 }

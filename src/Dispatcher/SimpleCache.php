@@ -32,7 +32,7 @@ class SimpleCache extends AbstractDispatcher implements DispatcherInterface
         }
     }
 
-    public function dispatch(string $url, string $method = null): array
+    public function dispatch(string $url): ?array
     {
         $key = $this->hash($url);
 
@@ -44,17 +44,19 @@ class SimpleCache extends AbstractDispatcher implements DispatcherInterface
             }
         }
 
-        return $this->formatResult($result, $method);
+        return $result;
     }
 
     /**
-     * @param array $routes
+     * @param array $rules
      */
-    public function setRoutes(array $routes): void
+    public function setRules(array $rules): void
     {
-        $this->routes = $routes;
+        $this->routes = $rules;
 
-        $key = $this->hash('#routes');
-        $this->cache->set($key, $routes);
+        $this->cache->set(
+            $this->hash('#routes'),
+            $rules
+        );
     }
 }

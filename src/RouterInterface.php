@@ -2,31 +2,31 @@
 
 namespace Hail\Route;
 
-use Hail\Route\Dispatcher\DispatcherInterface;
-
-interface RouterInterface extends DispatcherInterface
+interface RouterInterface
 {
+    public function addMethods(array $methods): void;
+
+    public function addMethod(string $method): void;
+
     public function addRoutes(array $config): void;
 
     public function addRoute($methods, string $route, $handler): void;
 
-    public function head(string $route, $handler): self;
+    public function result(): array;
 
-    public function get(string $route, $handler): self;
+    public function methods(string $url): ?array;
 
-    public function post(string $route, $handler): self;
+    /**
+     * @param string $key
+     *
+     * @return array|string|null
+     */
+    public function param(string $key = null);
 
-    public function put(string $route, $handler): self;
+    /**
+     * @return array|\Closure
+     */
+    public function handler();
 
-    public function patch(string $route, $handler): self;
-
-    public function delete(string $route, $handler): self;
-
-    public function purge(string $route, $handler): self;
-
-    public function options(string $route, $handler): self;
-
-    public function trace(string $route, $handler): self;
-
-    public function connect(string $route, $handler): self;
+    public function dispatch(string $url, string $method = null): array;
 }

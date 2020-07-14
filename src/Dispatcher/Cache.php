@@ -32,7 +32,7 @@ class Cache extends AbstractDispatcher implements DispatcherInterface
         }
     }
 
-    public function dispatch(string $url, string $method = null): array
+    public function dispatch(string $url): ?array
     {
         $key = $this->hash($url);
 
@@ -48,21 +48,21 @@ class Cache extends AbstractDispatcher implements DispatcherInterface
             }
         }
 
-        return $this->formatResult($result, $method);
+        return $result;
     }
 
     /**
-     * @param array $routes
+     * @param array $rules
      */
-    public function setRoutes(array $routes): void
+    public function setRules(array $rules): void
     {
-        $this->routes = $routes;
+        $this->routes = $rules;
 
         $key = $this->hash('#routes');
         $item = $this->cache->getItem($key);
 
         $this->cache->save(
-            $item->set($routes)
+            $item->set($rules)
         );
     }
 }

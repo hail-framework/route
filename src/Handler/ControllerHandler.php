@@ -3,22 +3,22 @@
 namespace Hail\Route\Handler;
 
 
-class Handler
+class ControllerHandler
 {
     /**
      * @var string
      */
-    private $class;
+    protected $class;
 
     /**
      * @var string
      */
-    private $method;
+    protected $method;
 
     /**
      * @var array
      */
-    private static $instances;
+    protected static $instances;
 
     public function __construct(array $options)
     {
@@ -53,7 +53,7 @@ class Handler
             $class = $actionClass;
             $method = '__invoke';
         } elseif (\class_exists($class)) {
-            $method = \lcfirst($action) . 'Action';
+            $method = \lcfirst($action);
 
             if (!\method_exists($class, $method)) {
                 throw new \InvalidArgumentException("Action not defined: {$class}::{$method}", 404);
@@ -78,7 +78,7 @@ class Handler
         }
 
         $keys[] = $options['controller'] ?? 'index';
-        $key = implode(':', $keys);
+        $key = \implode(':', $keys);
 
         if (!isset(self::$instances[$key])) {
             self::$instances[$key] = new self($options);

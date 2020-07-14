@@ -6,17 +6,79 @@ use Hail\Route\Dispatcher\AbstractDispatcher;
 
 abstract class AbstractRouter extends AbstractDispatcher
 {
+    protected const NODE = [
+        self::CHILDREN => [],
+        self::REGEXPS => [],
+        self::VARIABLES => [],
+        self::WILDCARD => false,
+    ];
+
+    protected const HANDLER_APP = 'app';
+    protected const HANDLER_CONTROLLER = 'controller';
+    protected const HANDLER_ACTION = 'action';
+
     /**
      * @var string[]
      */
     protected $methods = [];
 
-    public function addMethods(array $methods)
+    /**
+     * @var array
+     */
+    protected $result = [];
+
+    /**
+     * @return array
+     */
+    public function result(): array
+    {
+        return $this->result;
+    }
+
+    /**
+     * @param string $url
+     *
+     * @return array|null
+     */
+    public function methods(string $url): ?array
+    {
+        $result = $this->dispatch($url);
+        if ($result[self::ERROR] === 404) {
+            return null;
+        }
+
+        return $result[self::METHODS];
+    }
+
+
+    /**
+     * @param string $key
+     *
+     * @return array|string|null
+     */
+    public function param(string $key = null)
+    {
+        if ($key === null) {
+            return $this->result[self::PARAMS] ?? null;
+        }
+
+        return $this->result[self::PARAMS][$key] ?? null;
+    }
+
+    /**
+     * @return array|\Closure
+     */
+    public function handler()
+    {
+        return $this->result[self::HANDLER];
+    }
+
+    public function addMethods(array $methods): void
     {
         \array_map([$this, 'addMethod'], $methods);
     }
 
-    public function addMethod(string $method)
+    public function addMethod(string $method): void
     {
         $this->methods[\strtoupper($method)] = true;
     }

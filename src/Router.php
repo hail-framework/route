@@ -37,7 +37,7 @@ class Router extends AbstractRouter implements RouterInterface
             }
 
             if ($this->cache && $this->cache->getRoutes() === null) {
-                $this->addMethods($config);
+                $this->addRoutes($config);
                 $this->cache->setRoutes($this->routes);
                 $this->routes = null;
             }
@@ -58,79 +58,48 @@ class Router extends AbstractRouter implements RouterInterface
         }
 
         if ($result === null && $this->cache) {
-            return $this->cache->dispatch($url, $method);
+            $result = $this->cache->dispatch($url, $method);
         }
 
-        return $this->formatResult($result, $method);
-    }
+        if ($result === null) {
+            return $this->result = [
+                self::URL => $result[self::URL],
+                self::ERROR => 404,
+            ];
+        }
 
-    public function head(string $route, $handler): RouterInterface
-    {
-        $this->addRoute(['HEAD'], $route, $handler);
+        if ($method !== null && isset($result[self::METHODS][$method])) {
+            $params = $result[self::PARAMS];
+            $handler = $result[self::METHODS][$method];
 
-        return $this;
-    }
+            if (!$handler instanceof \Closure) {
+                if (isset($handler[self::PARAMS])) {
+                    $params += $handler[self::PARAMS];
+                }
 
-    public function get(string $route, $handler): RouterInterface
-    {
-        $this->addRoute(['GET'], $route, $handler);
+                $handler = [
+                    self::HANDLER_APP => $handler[self::HANDLER_APP] ?? $params[self::HANDLER_APP] ?? null,
+                    self::HANDLER_CONTROLLER => $handler[self::HANDLER_CONTROLLER] ?? $params[self::HANDLER_CONTROLLER] ?? null,
+                    self::HANDLER_ACTION => $handler[self::HANDLER_ACTION] ?? $params[self::HANDLER_ACTION] ?? null,
+                    self::METHOD => $method,
+                ];
+            }
 
-        return $this;
-    }
+            return $this->result = [
+                self::URL => $result[self::URL],
+                self::METHOD => $method,
+                self::ROUTE => $result[self::ROUTE],
+                self::PARAMS => $params,
+                self::HANDLER => $handler,
+            ];
+        }
 
-    public function post(string $route, $handler): RouterInterface
-    {
-        $this->addRoute(['POST'], $route, $handler);
-
-        return $this;
-    }
-
-    public function put(string $route, $handler): RouterInterface
-    {
-        $this->addRoute(['PUT'], $route, $handler);
-
-        return $this;
-    }
-
-    public function patch(string $route, $handler): RouterInterface
-    {
-        $this->addRoute(['PATCH'], $route, $handler);
-
-        return $this;
-    }
-
-    public function delete(string $route, $handler): RouterInterface
-    {
-        $this->addRoute(['DELETE'], $route, $handler);
-
-        return $this;
-    }
-
-    public function purge(string $route, $handler): RouterInterface
-    {
-        $this->addRoute(['PURGE'], $route, $handler);
-
-        return $this;
-    }
-
-    public function options(string $route, $handler): RouterInterface
-    {
-        $this->addRoute(['OPTIONS'], $route, $handler);
-
-        return $this;
-    }
-
-    public function trace(string $route, $handler): RouterInterface
-    {
-        $this->addRoute(['TRACE'], $route, $handler);
-
-        return $this;
-    }
-
-    public function connect(string $route, $handler): RouterInterface
-    {
-        $this->addRoute(['CONNECT'], $route, $handler);
-
-        return $this;
+        return $this->result = [
+            self::URL => $result[self::URL],
+            self::ERROR => 405,
+            self::ROUTE => $result[self::ROUTE],
+            self::PARAMS => $result[self::PARAMS],
+            self::METHODS => \array_keys($result[self::METHODS]),
+        ];
     }
 }
