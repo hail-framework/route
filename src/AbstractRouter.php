@@ -95,18 +95,47 @@ abstract class AbstractRouter extends AbstractDispatcher
         return $this;
     }
 
+    /**
+     * @param string|array $methods
+     *
+     * @return array
+     */
+    protected function parseMethods($methods): array
+    {
+        if (empty($methods)) {
+            throw new \InvalidArgumentException('Methods is empty');
+        }
+
+        if (\is_string($methods)) {
+            $methods = \explode('|', $methods);
+        }
+
+        if (!\is_array($methods)) {
+            throw new \InvalidArgumentException('Methods must be array');
+        }
+
+        foreach ($methods as $method) {
+            $method = \strtoupper(\trim($method));
+            if (!isset($this->methods[$method])) {
+                throw new \InvalidArgumentException("\"$method\" method not supported");
+            }
+        }
+
+        return $methods;
+    }
+
     public function addRoutes(array $config): void
     {
         foreach ($config as $app => $rules) {
             $app = \ucfirst($app);
             foreach ($rules as $route => $rule) {
                 $handler = ['app' => $app];
-                $methods = ['GET', 'POST'];
+                $methods = ['GET'];
 
                 if (\is_string($rule)) {
                     $route = $rule;
                 } else {
-                    $methods = $rule[self::METHODS] ?? $methods;
+                    $methods = $this->parseMethods($rule[self::METHODS] ?? $methods);
 
                     foreach (['controller', 'action', self::PARAMS] as $v) {
                         if (!empty($rule[$v])) {
@@ -127,10 +156,6 @@ abstract class AbstractRouter extends AbstractDispatcher
      */
     public function addRoute($methods, string $route, $handler): void
     {
-        if (empty($methods)) {
-            throw new \InvalidArgumentException('Methods is empty');
-        }
-
         if (!\is_callable($handler) && !\is_array($handler)) {
             throw new \InvalidArgumentException('Handler is not a valid type: ' . \var_export($handler, true));
         }
@@ -151,9 +176,7 @@ abstract class AbstractRouter extends AbstractDispatcher
             throw new \InvalidArgumentException('Optional pattern error, "[" and "]" does not match');
         }
 
-        if (\is_string($methods)) {
-            $methods = \array_map('\trim', \explode('|', $methods));
-        }
+        $methods = $this->parseMethods($methods);
 
         if ($this->routes === null) {
             $this->routes = self::NODE;
