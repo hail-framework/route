@@ -8,22 +8,22 @@ namespace Hail\Route;
  * @package Hail\Route
  * @author  Feng Hao <flyinghail@msn.com>
  *
- * @method self head(string $route, array|callable $handler)
- * @method self get(string $route, array|callable $handler)
- * @method self post(string $route, array|callable $handler)
- * @method self put(string $route, array|callable $handler)
- * @method self patch(string $route, array|callable $handler)
- * @method self delete(string $route, array|callable $handler)
- * @method self purge(string $route, array|callable $handler)
- * @method self options(string $route, array|callable $handler)
- * @method self trace(string $route, array|callable $handler)
- * @method self connect(string $route, array|callable $handler)
+ * @method $this head(string $route, array|callable $handler)
+ * @method $this get(string $route, array|callable $handler)
+ * @method $this post(string $route, array|callable $handler)
+ * @method $this put(string $route, array|callable $handler)
+ * @method $this patch(string $route, array|callable $handler)
+ * @method $this delete(string $route, array|callable $handler)
+ * @method $this purge(string $route, array|callable $handler)
+ * @method $this options(string $route, array|callable $handler)
+ * @method $this trace(string $route, array|callable $handler)
+ * @method $this connect(string $route, array|callable $handler)
  */
 class RestRouter extends Router
 {
-    public function __construct(array $config = [], $cache = null)
+    public function __construct(array $config = [])
     {
-        parent::__construct($config, $cache);
+        parent::__construct($config);
 
         $this->addMethods([
             'HEAD',
