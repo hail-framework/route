@@ -16,12 +16,9 @@ interface RouterInterface
 
     public function methods(string $url = null): ?array;
 
-    /**
-     * @param string $key
-     *
-     * @return array|string|null
-     */
-    public function param(string $key = null);
+    public function params(): ?array;
+
+    public function param(string $key): ?string;
 
     /**
      * @return array|\Closure

@@ -219,16 +219,20 @@ class Router implements RouterInterface
     }
 
     /**
+     * @return array|null
+     */
+    public function params(): ?array
+    {
+        return $this->result[self::PARAMS] ?? null;
+    }
+
+    /**
      * @param string $key
      *
-     * @return array|string|null
+     * @return string|null
      */
-    public function param(string $key = null)
+    public function param(string $key): ?string
     {
-        if ($key === null) {
-            return $this->result[self::PARAMS] ?? null;
-        }
-
         return $this->result[self::PARAMS][$key] ?? null;
     }
 
